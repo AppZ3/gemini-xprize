@@ -274,6 +274,33 @@ function Results({
   const [emailSent, setEmailSent] = useState(false);
   const [emailInput, setEmailInput] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
+  const [workflowLoading, setWorkflowLoading] = useState(false);
+
+  async function downloadWorkflow() {
+    setWorkflowLoading(true);
+    try {
+      const res = await fetch("/api/workflow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessType,
+          painPoints: result.summary,
+          currentTools: "",
+          recommendations: result.recommendations,
+        }),
+      });
+      const workflow = await res.json();
+      const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `au-business-automation-${businessType.toLowerCase().replace(/\s+/g, "-").slice(0, 30)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setWorkflowLoading(false);
+    }
+  }
 
   const priorityColors = {
     high: "bg-red-50 text-red-700 border-red-200",
@@ -450,6 +477,19 @@ function Results({
             <p className="text-sm text-slate-500 mt-1">We will also notify you when we add new AU-specific automation tools.</p>
           </div>
         )}
+      </div>
+
+      {/* n8n workflow download */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-6">
+        <h3 className="font-semibold text-orange-900 mb-1">Download your n8n automation workflow</h3>
+        <p className="text-sm text-orange-700 mb-4">Get a ready-to-import n8n JSON file with AU-specific BAS reminders, super guarantee alerts, and business automations tailored to your setup. Import directly into any n8n instance.</p>
+        <button
+          onClick={downloadWorkflow}
+          disabled={workflowLoading}
+          className="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white text-sm font-semibold rounded-lg transition-colors"
+        >
+          {workflowLoading ? "Generating..." : "Download n8n workflow (.json)"}
+        </button>
       </div>
 
       {/* Share */}
