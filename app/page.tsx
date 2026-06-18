@@ -6,13 +6,16 @@ import { AdvisorOutput } from "@/lib/gemini";
 const TEAM_SIZES = ["Just me", "2-5 people", "6-20 people", "20+ people"];
 
 const BUSINESS_EXAMPLES = [
-  "Marketing agency with 3 staff",
-  "Freelance web developer",
-  "Small accounting firm",
-  "E-commerce store",
+  "Tradie / plumber / electrician",
+  "Mortgage broker",
+  "NDIS support provider",
+  "Marketing agency",
+  "Accounting firm",
   "Real estate agency",
+  "E-commerce store",
   "Healthcare clinic",
   "Restaurant or cafe",
+  "Freelance consultant",
 ];
 
 export default function Home() {
@@ -21,6 +24,7 @@ export default function Home() {
     teamSize: "Just me",
     painPoints: "",
     currentTools: "",
+    hourlyRate: "",
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AdvisorOutput | null>(null);
@@ -36,7 +40,10 @@ export default function Home() {
       const res = await fetch("/api/advisor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : undefined,
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -53,40 +60,40 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Header */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <span className="text-xl font-bold text-slate-900">AppZ</span>
-            <span className="text-xl font-light text-blue-600 ml-1">Automation Advisor</span>
+            <span className="text-xl font-light text-blue-600 ml-1">AU Business Advisor</span>
           </div>
-          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Powered by Gemini AI</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded-full font-medium">AU-specific</span>
+            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Powered by Gemini AI</span>
+          </div>
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-12">
         {!result ? (
           <>
-            {/* Hero */}
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-sm font-medium px-4 py-2 rounded-full mb-6">
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                Gemini AI analyses your business in seconds
+                Built for Australian small businesses
               </div>
               <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4 leading-tight">
-                Stop doing tasks <br />
-                <span className="text-blue-600">AI can handle</span>
+                Your free AI automation<br />
+                <span className="text-blue-600">blueprint for AU business</span>
               </h1>
               <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                Describe your business. Gemini builds your personalised automation blueprint and recommends the exact tools to save 10+ hours per week.
+                Gemini analyses your business with Australian context built in: GST, BAS, super, Fair Work, and the tools AU businesses actually use. Get your personalised plan in 30 seconds.
               </p>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-12">
               {[
                 { value: "10+ hrs", label: "saved per week" },
-                { value: "33", label: "automation packs" },
+                { value: "AU-first", label: "GST, BAS, super context" },
                 { value: "Free", label: "instant blueprint" },
               ].map(stat => (
                 <div key={stat.label} className="text-center p-4 bg-white rounded-xl border border-slate-200">
@@ -96,9 +103,8 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Form */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">Tell us about your business</h2>
+              <h2 className="text-xl font-semibold text-slate-900 mb-6">Tell us about your Australian business</h2>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -109,7 +115,7 @@ export default function Home() {
                     required
                     value={form.businessType}
                     onChange={e => setForm(f => ({ ...f, businessType: e.target.value }))}
-                    placeholder="e.g. Marketing agency, freelance designer, accounting firm..."
+                    placeholder="e.g. Tradie, mortgage broker, marketing agency..."
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -154,23 +160,40 @@ export default function Home() {
                     required
                     value={form.painPoints}
                     onChange={e => setForm(f => ({ ...f, painPoints: e.target.value }))}
-                    placeholder="e.g. Manually sending invoices and chasing payments, copying data between spreadsheets, following up with clients..."
+                    placeholder="e.g. Chasing invoices, doing BAS manually, data entry between Xero and spreadsheets, following up clients..."
                     rows={3}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Tools you currently use (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={form.currentTools}
-                    onChange={e => setForm(f => ({ ...f, currentTools: e.target.value }))}
-                    placeholder="e.g. Xero, HubSpot, Google Sheets, Slack..."
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Tools you use (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={form.currentTools}
+                      onChange={e => setForm(f => ({ ...f, currentTools: e.target.value }))}
+                      placeholder="e.g. Xero, MYOB, HubSpot, Slack..."
+                      className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Your hourly rate (optional, AUD)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="5000"
+                      value={form.hourlyRate}
+                      onChange={e => setForm(f => ({ ...f, hourlyRate: e.target.value }))}
+                      placeholder="e.g. 150"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">Used to calculate dollar value of time saved</p>
+                  </div>
                 </div>
 
                 {error && (
@@ -190,25 +213,47 @@ export default function Home() {
                       Gemini is analysing your business...
                     </>
                   ) : (
-                    "Get my free automation blueprint"
+                    "Get my free AU automation blueprint"
                   )}
                 </button>
 
                 <p className="text-center text-xs text-slate-400">
-                  Free. No email required. Powered by Google Gemini AI.
+                  Free. No email required. Australian business context built in. Powered by Google Gemini AI.
                 </p>
               </form>
             </div>
+
+            <div className="mt-12 bg-slate-50 border border-slate-200 rounded-2xl p-6">
+              <h3 className="font-semibold text-slate-800 mb-3">What makes this AU-specific?</h3>
+              <div className="grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
+                {[
+                  "GST registration and BAS lodgement automation",
+                  "Superannuation payment reminders and tracking",
+                  "Xero and MYOB workflow integrations",
+                  "Fair Work compliance record-keeping",
+                  "ATO deadline alerts and STP payroll",
+                  "AU government grant opportunity tracking",
+                ].map(item => (
+                  <div key={item} className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">+</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         ) : (
-          <Results result={result} onReset={() => setResult(null)} />
+          <Results
+            result={result}
+            businessType={form.businessType}
+            onReset={() => setResult(null)}
+          />
         )}
       </div>
 
-      {/* Footer */}
       <footer className="border-t border-slate-200 mt-20 py-8">
         <div className="max-w-4xl mx-auto px-4 text-center text-sm text-slate-500">
-          <p>AppZ AI Studio &mdash; Business automation powered by Google Gemini AI</p>
+          <p>AppZ AI Studio - Australian business automation powered by Google Gemini AI</p>
           <p className="mt-1">Built for the Build with Gemini XPRIZE 2026</p>
         </div>
       </footer>
@@ -216,28 +261,102 @@ export default function Home() {
   );
 }
 
-function Results({ result, onReset }: { result: AdvisorOutput; onReset: () => void }) {
+function Results({
+  result,
+  businessType,
+  onReset,
+}: {
+  result: AdvisorOutput;
+  businessType: string;
+  onReset: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+
   const priorityColors = {
     high: "bg-red-50 text-red-700 border-red-200",
     medium: "bg-amber-50 text-amber-700 border-amber-200",
     low: "bg-slate-50 text-slate-700 border-slate-200",
   };
 
+  function copyBlueprint() {
+    const text = [
+      `Automation Blueprint for: ${businessType}`,
+      "",
+      result.summary,
+      "",
+      result.auContext ? `AU Context: ${result.auContext}` : "",
+      "",
+      `Time saved: ${result.estimatedTimeSaved}`,
+      result.dollarsPerWeekSaved ? `Value: ${result.dollarsPerWeekSaved}` : "",
+      "",
+      "Recommended products:",
+      ...result.recommendations.map(r => `- ${r.product.name}: ${r.expectedImpact}`),
+      "",
+      "30-day plan:",
+      result.implementationPlan,
+      "",
+      `Next step: ${result.nextStep}`,
+      "",
+      "Generated by AppZ AU Business Advisor (gemini-xprize.vercel.app)",
+    ].filter(Boolean).join("\n");
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function shareOnX() {
+    const text = `Just got my free AI automation blueprint for my AU business - saves ${result.estimatedTimeSaved} per week. Try it: https://gemini-xprize.vercel.app #SmallBusiness #Australia #Automation`;
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
+  function shareOnLinkedIn() {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://gemini-xprize.vercel.app")}`, "_blank");
+  }
+
+  async function sendByEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailLoading(true);
+    try {
+      await fetch("/api/email-capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput, businessType, summary: result.summary }),
+      });
+      setEmailSent(true);
+    } finally {
+      setEmailLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* Summary card */}
       <div className="bg-blue-600 text-white rounded-2xl p-8">
-        <div className="text-sm font-medium text-blue-200 mb-2">Your Automation Blueprint</div>
+        <div className="text-sm font-medium text-blue-200 mb-2">Your Australian Business Automation Blueprint</div>
         <p className="text-lg leading-relaxed">{result.summary}</p>
-        <div className="mt-4 flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-1">
-            <span className="text-blue-300">Estimated time saved:</span>
+        {result.auContext && (
+          <div className="mt-4 p-3 bg-blue-500/50 rounded-xl text-sm text-blue-100">
+            <span className="font-semibold text-white">AU note: </span>{result.auContext}
+          </div>
+        )}
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+          <div>
+            <span className="text-blue-300">Time saved: </span>
             <span className="font-semibold">{result.estimatedTimeSaved}</span>
           </div>
+          {result.dollarsPerWeekSaved && (
+            <div>
+              <span className="text-blue-300">Value: </span>
+              <span className="font-semibold text-green-300">{result.dollarsPerWeekSaved}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Recommendations */}
       <div>
         <h2 className="text-xl font-semibold text-slate-900 mb-4">Recommended for your business</h2>
         <div className="space-y-4">
@@ -286,22 +405,71 @@ function Results({ result, onReset }: { result: AdvisorOutput; onReset: () => vo
         </div>
       </div>
 
-      {/* Implementation plan */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <h2 className="font-semibold text-slate-900 mb-3">Your 30-day implementation plan</h2>
         <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">{result.implementationPlan}</p>
       </div>
 
-      {/* Next step CTA */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
         <div className="text-sm font-semibold text-amber-800 mb-1">Your next step today</div>
         <p className="text-amber-700">{result.nextStep}</p>
       </div>
 
-      <div className="flex gap-3">
+      {/* Email capture */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+        {!emailSent ? (
+          <>
+            <h3 className="font-semibold text-slate-800 mb-1">Get this blueprint by email</h3>
+            <p className="text-sm text-slate-500 mb-4">We will send your personalised plan so you can refer back to it any time.</p>
+            <form onSubmit={sendByEmail} className="flex gap-3">
+              <input
+                type="email"
+                required
+                value={emailInput}
+                onChange={e => setEmailInput(e.target.value)}
+                placeholder="your@email.com.au"
+                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={emailLoading}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
+              >
+                {emailLoading ? "Sending..." : "Send blueprint"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <div className="text-center py-2">
+            <div className="text-green-600 font-semibold">Blueprint sent! Check your inbox.</div>
+            <p className="text-sm text-slate-500 mt-1">We will also notify you when we add new AU-specific automation tools.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Share */}
+      <div className="flex gap-3 flex-wrap">
+        <button
+          onClick={copyBlueprint}
+          className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+        >
+          {copied ? "Copied!" : "Copy blueprint"}
+        </button>
+        <button
+          onClick={shareOnX}
+          className="flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          Share on X
+        </button>
+        <button
+          onClick={shareOnLinkedIn}
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          Share on LinkedIn
+        </button>
         <button
           onClick={onReset}
-          className="flex-1 py-3 border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-xl transition-colors"
+          className="flex-1 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors"
         >
           Analyse another business
         </button>
