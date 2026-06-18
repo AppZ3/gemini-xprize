@@ -210,7 +210,7 @@ export default function Home() {
                   {loading ? (
                     <>
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      Gemini is analysing your business...
+                      Gemini is searching AU data and analysing your business...
                     </>
                   ) : (
                     "Get my free AU automation blueprint"
@@ -341,6 +341,11 @@ function Results({
         {result.auContext && (
           <div className="mt-4 p-3 bg-blue-500/50 rounded-xl text-sm text-blue-100">
             <span className="font-semibold text-white">AU note: </span>{result.auContext}
+          </div>
+        )}
+        {result.groundedFacts && (
+          <div className="mt-3 p-3 bg-white/10 border border-white/20 rounded-xl text-sm text-blue-50">
+            <span className="font-semibold text-white">Live AU data (via Gemini Search): </span>{result.groundedFacts}
           </div>
         )}
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">

@@ -26,22 +26,28 @@ export type AdvisorOutput = {
   estimatedTimeSaved: string;
   dollarsPerWeekSaved: string;
   nextStep: string;
+  groundedFacts?: string;
 };
 
 const AU_BUSINESS_CONTEXT = `
-AUSTRALIAN BUSINESS CONTEXT (always apply this knowledge):
-- GST: 10% applies once turnover exceeds $75k/year. Quarterly BAS lodgement is a major admin burden.
-- Superannuation: Employers must pay 11.5% super on top of wages, with SG deadlines each quarter.
-- ATO compliance: STP (Single Touch Payroll) mandatory for all employers. PAYG withholding monthly.
-- Popular AU accounting tools: Xero (dominant), MYOB, Reckon, QuickBooks (less common than US).
-- Fair Work Act: Award rates, leave entitlements, and record-keeping requirements add compliance load.
-- AU grants: R&D Tax Incentive (43.5% refundable offset), Export Market Development Grant, state business grants.
-- AU-specific pain points: Chasing 30/60-day invoice payments, BAS prep, super lodgement, award rate calculations.
-- Recommend Xero/MYOB integrations where relevant. Flag GST/BAS automation as high-value for service businesses.
+AUSTRALIAN BUSINESS CONTEXT (apply this knowledge to every response):
+- GST: 10% on most goods/services once turnover exceeds $75,000/year. BAS lodged quarterly (or monthly for large businesses). GST-registered businesses must reconcile and lodge by 28th day after each quarter.
+- Superannuation: Employers must pay 11.5% SG on top of wages (rising to 12% from 1 July 2025). Due quarterly by 28th day after each quarter via SuperStream. Late super = Super Guarantee Charge penalty.
+- STP (Single Touch Payroll): Mandatory for ALL employers. Each pay event reported to ATO digitally. Year-end finalisation required by 14 July each year.
+- Fair Work Act: Award rates, penalty rates, leave entitlements (annual, sick, long service), and record-keeping obligations. Underpayments trigger back-pay + penalties.
+- Popular AU accounting software: Xero (dominant, ~70% market share), MYOB AccountRight/Essentials, Reckon, QuickBooks Online (less common than US).
+- Industry-specific AU software: ServiceM8 (trades), Deputy (rostering), Cliniko (healthcare/allied health), Vend/Lightspeed (retail), LEAP (legal), Karbon (accounting firms).
+- ATO key dates: BAS Q1 due 28 Oct, Q2 due 28 Feb, Q3 due 28 Apr, Q4 due 28 Jul. PAYG withholding also quarterly for most small businesses.
+- AU grants: R&D Tax Incentive (43.5% refundable offset for eligible R&D), Export Market Development Grant, Small Business Digital Adaptation Program (state-level), various state innovation grants.
+- AU-specific pain points: Chasing 30/60-day invoice payments (slow payment culture), BAS preparation scramble, super lodgement deadlines, award rate compliance, WorkCover/workers compensation.
+- Recommend Xero/MYOB integrations specifically. Flag GST/BAS automation as extremely high-value for any service business.
 `.trim();
 
 export async function getAutomationAdvice(input: AdvisorInput): Promise<AdvisorOutput> {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    tools: [{ googleSearchRetrieval: {} }],
+  });
 
   const productCatalog = ALL_PRODUCTS.map(p =>
     `${p.name} | $${p.price} | Tags: ${p.tags.join(", ")} | ${p.description}`
@@ -51,7 +57,7 @@ export async function getAutomationAdvice(input: AdvisorInput): Promise<AdvisorO
     ? `- Your billable rate: $${input.hourlyRate}/hr AUD`
     : "";
 
-  const prompt = `You are an expert Australian small business automation consultant. A business owner needs personalised automation advice.
+  const prompt = `You are an expert Australian small business automation consultant with deep knowledge of AU tax, compliance, and operations. Use your web search to find the most current ATO deadlines, super rates, and AU grant opportunities relevant to this business.
 
 ${AU_BUSINESS_CONTEXT}
 
@@ -62,31 +68,33 @@ BUSINESS PROFILE:
 - Current tools: ${input.currentTools || "Not specified"}
 ${rateContext}
 
-AVAILABLE AUTOMATION PRODUCTS:
+AVAILABLE AUTOMATION PRODUCTS (match these to the business):
 ${productCatalog}
 
 YOUR TASK:
-1. Identify the 2-3 AU-specific automation opportunities (mention GST/BAS/super/Fair Work where relevant)
-2. Select the 2-3 best-fit products from the catalog (match by tags and AU context)
-3. Write a practical 30-day implementation plan with AU-specific steps
-4. Estimate hours saved per week${input.hourlyRate ? ` and convert to AUD dollars at $${input.hourlyRate}/hr` : ""}
+1. Search for current AU business automation trends and any relevant ATO updates for this business type
+2. Identify the 2-3 most impactful AU-specific automation opportunities (explicitly mention GST/BAS/super/Fair Work where relevant)
+3. Select the 2-3 best-fit products from the catalog (match tags to their specific pain points)
+4. Write a practical 30-60 day implementation roadmap with AU-specific milestones
+5. Estimate time saved per week and dollar value${input.hourlyRate ? ` at $${input.hourlyRate}/hr` : " based on typical AU rates"}
 
 Respond ONLY in this exact JSON format (no markdown, no extra text):
 {
-  "summary": "2-3 sentences personalised to their Australian business context, mentioning AU-specific issues like GST/BAS/super where relevant",
-  "auContext": "1 sentence on the most important AU compliance or operational factor for their specific business type",
+  "summary": "2-3 sentences specifically addressing this Australian business context -- mention their pain points and the AU-specific angle (GST/BAS/super/Fair Work as relevant)",
+  "auContext": "The single most important AU compliance or operational factor for THIS specific business type right now",
+  "groundedFacts": "1-2 sentences of current, real data you found via search (e.g. current super rate, ATO deadline, relevant grant) -- cite what is current as of today",
   "recommendations": [
     {
       "productName": "exact product name from catalog",
-      "reason": "specific reason this fits their AU business (1 sentence)",
-      "expectedImpact": "concrete outcome e.g. '6 hours/week saved on BAS prep and invoice chasing'",
+      "reason": "specific reason this fits their AU business and their stated pain points (1-2 sentences)",
+      "expectedImpact": "concrete, specific outcome e.g. '5-8 hours/week recovered from BAS prep and invoice chasing'",
       "priority": "high"
     }
   ],
-  "implementationPlan": "Step-by-step 30-day plan with AU-specific context (4-5 steps, practical, mention Xero/MYOB/ATO where relevant)",
+  "implementationPlan": "Practical 30-60 day plan with AU-specific milestones. Mention connecting to Xero/MYOB, ATO lodgement dates, super payment dates where relevant. 4-6 clear steps.",
   "estimatedTimeSaved": "e.g. '8-12 hours/week'",
-  "dollarsPerWeekSaved": "${input.hourlyRate ? `calculate: hours saved x $${input.hourlyRate}, e.g. '$960-$1,440/week in recovered capacity'` : "estimate based on typical AU contractor rates, e.g. 'equivalent to $800-$1,200/week in recovered capacity'"}",
-  "nextStep": "single most important first action they should take today, specific to their AU business"
+  "dollarsPerWeekSaved": "${input.hourlyRate ? `Calculate: hours saved x $${input.hourlyRate}/hr. Format: '$X,XXX-$X,XXX/week in recovered billable capacity'` : "Estimate using typical AU contractor/professional rates ($80-200/hr depending on industry). Format: 'equivalent to $X,XXX-$X,XXX/week'"}",
+  "nextStep": "The single most important first action they should take TODAY -- specific, actionable, AU-context aware (e.g. 'Connect Xero to n8n before your next BAS quarter ends 28 October')"
 }`;
 
   const result = await model.generateContent(prompt);
@@ -113,6 +121,7 @@ Respond ONLY in this exact JSON format (no markdown, no extra text):
   return {
     summary: parsed.summary,
     auContext: parsed.auContext || "",
+    groundedFacts: parsed.groundedFacts || "",
     recommendations,
     implementationPlan: parsed.implementationPlan,
     estimatedTimeSaved: parsed.estimatedTimeSaved,
