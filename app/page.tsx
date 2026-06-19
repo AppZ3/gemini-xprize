@@ -293,6 +293,8 @@ function Results({
   const [emailInput, setEmailInput] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [shareLink, setShareLink] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
 
   async function downloadWorkflow() {
     setWorkflowLoading(true);
@@ -352,6 +354,29 @@ function Results({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  }
+
+  async function getShareLink() {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink);
+      return;
+    }
+    setShareLoading(true);
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessType, planData: result }),
+      });
+      const data = await res.json();
+      if (data.id) {
+        const link = `${window.location.origin}/plan/${data.id}`;
+        setShareLink(link);
+        navigator.clipboard.writeText(link);
+      }
+    } finally {
+      setShareLoading(false);
+    }
   }
 
   function shareOnX() {
@@ -511,31 +536,47 @@ function Results({
       </div>
 
       {/* Share */}
-      <div className="flex gap-3 flex-wrap">
-        <button
-          onClick={copyBlueprint}
-          className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors"
-        >
-          {copied ? "Copied!" : "Copy blueprint"}
-        </button>
-        <button
-          onClick={shareOnX}
-          className="flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          Share on X
-        </button>
-        <button
-          onClick={shareOnLinkedIn}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          Share on LinkedIn
-        </button>
-        <button
-          onClick={onReset}
-          className="flex-1 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors"
-        >
-          Analyse another business
-        </button>
+      <div className="space-y-3">
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={copyBlueprint}
+            className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+          >
+            {copied ? "Copied!" : "Copy blueprint"}
+          </button>
+          <button
+            onClick={shareOnX}
+            className="flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Share on X
+          </button>
+          <button
+            onClick={shareOnLinkedIn}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Share on LinkedIn
+          </button>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={getShareLink}
+            disabled={shareLoading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {shareLoading ? "Saving..." : shareLink ? "Link copied!" : "Get shareable link"}
+          </button>
+          {shareLink && (
+            <div className="flex-1 px-3 py-2.5 bg-slate-100 text-slate-600 text-xs rounded-lg truncate font-mono">
+              {shareLink}
+            </div>
+          )}
+          <button
+            onClick={onReset}
+            className="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+          >
+            Analyse another
+          </button>
+        </div>
       </div>
     </div>
   );
