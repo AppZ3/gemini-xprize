@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdvisorOutput } from "@/lib/gemini";
 
 const TEAM_SIZES = ["Just me", "2-5 people", "6-20 people", "20+ people"];
@@ -29,6 +29,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AdvisorOutput | null>(null);
   const [error, setError] = useState("");
+  const [blueprintCount, setBlueprintCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/counter")
+      .then(r => r.json())
+      .then(d => setBlueprintCount(d.count ?? null))
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,16 +99,26 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-12">
-              {[
-                { value: "10+ hrs", label: "saved per week" },
-                { value: "AU-first", label: "GST, BAS, super context" },
-                { value: "Free", label: "instant blueprint" },
-              ].map(stat => (
-                <div key={stat.label} className="text-center p-4 bg-white rounded-xl border border-slate-200">
-                  <div className="text-2xl font-bold text-blue-600">{stat.value}</div>
-                  <div className="text-sm text-slate-500">{stat.label}</div>
+              <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
+                <div className="text-2xl font-bold text-blue-600">
+                  {blueprintCount !== null && blueprintCount > 0
+                    ? blueprintCount.toLocaleString()
+                    : "10+ hrs"}
                 </div>
-              ))}
+                <div className="text-sm text-slate-500">
+                  {blueprintCount !== null && blueprintCount > 0
+                    ? "blueprints generated"
+                    : "saved per week"}
+                </div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
+                <div className="text-2xl font-bold text-blue-600">AU-first</div>
+                <div className="text-sm text-slate-500">GST, BAS, super context</div>
+              </div>
+              <div className="text-center p-4 bg-white rounded-xl border border-slate-200">
+                <div className="text-2xl font-bold text-blue-600">Free</div>
+                <div className="text-sm text-slate-500">instant blueprint</div>
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
