@@ -21,8 +21,7 @@ export default function SharedPlanClient({
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <span className="text-xl font-bold text-slate-900">AppZ</span>
-            <span className="text-xl font-light text-blue-600 ml-1">AU Business Advisor</span>
+            <span className="text-xl font-bold text-blue-600">Business Advisor</span>
           </div>
           <Link
             href="/"
@@ -143,8 +142,7 @@ export default function SharedPlanClient({
 
       <footer className="border-t border-slate-200 mt-20 py-8">
         <div className="max-w-4xl mx-auto px-4 text-center text-sm text-slate-500">
-          <p>AppZ AI Studio - Australian business automation powered by Google Gemini AI</p>
-          <p className="mt-1">Built for the Build with Gemini XPRIZE 2026</p>
+          <p>Australian business automation powered by Google Gemini AI</p>
         </div>
       </footer>
     </main>

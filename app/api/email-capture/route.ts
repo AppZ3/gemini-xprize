@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "AppZ AU Business Advisor <advisor@gemini-xprize.vercel.app>",
+          from: "Business Advisor <advisor@gemini-xprize.vercel.app>",
           to: [email],
           subject: "Your AU Business Automation Blueprint",
           html: `<h2>Your Automation Blueprint</h2><p>${summary}</p><p>Log back in to see your full recommendations at <a href="https://gemini-xprize.vercel.app">gemini-xprize.vercel.app</a></p>`,

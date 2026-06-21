@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Free AU Business Automation Blueprint | AppZ AU Business Advisor",
+  title: "Free AU Business Automation Blueprint | Business Advisor",
   description: "Australian small business? Get a free, personalised automation blueprint from Gemini AI -- with GST, BAS, super, and Fair Work context built in. 30 seconds.",
   keywords: ["Australian small business automation", "BAS automation", "GST software", "Xero automation", "AU business AI", "n8n Australia"],
   openGraph: {
