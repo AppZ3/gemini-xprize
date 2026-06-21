@@ -43,12 +43,7 @@ AUSTRALIAN BUSINESS CONTEXT (apply this knowledge to every response):
 - Recommend Xero/MYOB integrations specifically. Flag GST/BAS automation as extremely high-value for any service business.
 `.trim();
 
-export async function getAutomationAdvice(input: AdvisorInput): Promise<AdvisorOutput> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    tools: [{ googleSearchRetrieval: {} }],
-  });
-
+function buildPrompt(input: AdvisorInput, withSearch: boolean): string {
   const productCatalog = ALL_PRODUCTS.map(p =>
     `${p.name} | $${p.price} | Tags: ${p.tags.join(", ")} | ${p.description}`
   ).join("\n");
@@ -57,7 +52,19 @@ export async function getAutomationAdvice(input: AdvisorInput): Promise<AdvisorO
     ? `- Your billable rate: $${input.hourlyRate}/hr AUD`
     : "";
 
-  const prompt = `You are an expert Australian small business automation consultant with deep knowledge of AU tax, compliance, and operations. Use your web search to find the most current ATO deadlines, super rates, and AU grant opportunities relevant to this business.
+  const dollarFormat = input.hourlyRate
+    ? `Calculate: hours saved x $${input.hourlyRate}/hr. Format: '$X,XXX-$X,XXX/week in recovered billable capacity'`
+    : "Estimate using typical AU contractor/professional rates ($80-200/hr depending on industry). Format: 'equivalent to $X,XXX-$X,XXX/week'";
+
+  const searchInstruction = withSearch
+    ? "Use your web search to find the most current ATO deadlines, super rates, and AU grant opportunities relevant to this business."
+    : "Use your knowledge of Australian business, tax, and compliance to provide accurate current context.";
+
+  const groundedFactsLabel = withSearch
+    ? "1-2 sentences of current, real data you found via search (e.g. current super rate, ATO deadline, relevant grant) -- cite what is current as of today"
+    : "1-2 sentences of current AU business data most relevant to this business type (e.g. current super rate, ATO deadline, relevant grant)";
+
+  return `You are an expert Australian small business automation consultant with deep knowledge of AU tax, compliance, and operations. ${searchInstruction}
 
 ${AU_BUSINESS_CONTEXT}
 
@@ -72,17 +79,16 @@ AVAILABLE AUTOMATION PRODUCTS (match these to the business):
 ${productCatalog}
 
 YOUR TASK:
-1. Search for current AU business automation trends and any relevant ATO updates for this business type
-2. Identify the 2-3 most impactful AU-specific automation opportunities (explicitly mention GST/BAS/super/Fair Work where relevant)
-3. Select the 2-3 best-fit products from the catalog (match tags to their specific pain points)
-4. Write a practical 30-60 day implementation roadmap with AU-specific milestones
-5. Estimate time saved per week and dollar value${input.hourlyRate ? ` at $${input.hourlyRate}/hr` : " based on typical AU rates"}
+1. Identify the 2-3 most impactful AU-specific automation opportunities (explicitly mention GST/BAS/super/Fair Work where relevant)
+2. Select the 2-3 best-fit products from the catalog (match tags to their specific pain points)
+3. Write a practical 30-60 day implementation roadmap with AU-specific milestones
+4. Estimate time saved per week and dollar value${input.hourlyRate ? ` at $${input.hourlyRate}/hr` : " based on typical AU rates"}
 
 Respond ONLY in this exact JSON format (no markdown, no extra text):
 {
   "summary": "2-3 sentences specifically addressing this Australian business context -- mention their pain points and the AU-specific angle (GST/BAS/super/Fair Work as relevant)",
   "auContext": "The single most important AU compliance or operational factor for THIS specific business type right now",
-  "groundedFacts": "1-2 sentences of current, real data you found via search (e.g. current super rate, ATO deadline, relevant grant) -- cite what is current as of today",
+  "groundedFacts": "${groundedFactsLabel}",
   "recommendations": [
     {
       "productName": "exact product name from catalog",
@@ -93,30 +99,32 @@ Respond ONLY in this exact JSON format (no markdown, no extra text):
   ],
   "implementationPlan": "Practical 30-60 day plan with AU-specific milestones. Mention connecting to Xero/MYOB, ATO lodgement dates, super payment dates where relevant. 4-6 clear steps.",
   "estimatedTimeSaved": "e.g. '8-12 hours/week'",
-  "dollarsPerWeekSaved": "${input.hourlyRate ? `Calculate: hours saved x $${input.hourlyRate}/hr. Format: '$X,XXX-$X,XXX/week in recovered billable capacity'` : "Estimate using typical AU contractor/professional rates ($80-200/hr depending on industry). Format: 'equivalent to $X,XXX-$X,XXX/week'"}",
+  "dollarsPerWeekSaved": "${dollarFormat}",
   "nextStep": "The single most important first action they should take TODAY -- specific, actionable, AU-context aware (e.g. 'Connect Xero to n8n before your next BAS quarter ends 28 October')"
 }`;
+}
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
-
-  const jsonStr = text.replace(/^```json\n?/, "").replace(/\n?```$/, "").trim();
+function parseOutput(jsonText: string): AdvisorOutput {
+  const jsonStr = jsonText.replace(/^```json\n?/, "").replace(/\n?```$/, "").trim();
   const parsed = JSON.parse(jsonStr);
 
-  const recommendations: Recommendation[] = (parsed.recommendations || []).map((rec: {productName: string; reason: string; expectedImpact: string; priority: string}) => {
-    const product = ALL_PRODUCTS.find(p =>
-      p.name.toLowerCase() === rec.productName.toLowerCase()
-    ) || ALL_PRODUCTS.find(p =>
-      p.name.toLowerCase().includes(rec.productName.toLowerCase().split(" ")[0])
-    ) || ALL_PRODUCTS[0];
+  const recommendations: Recommendation[] = (parsed.recommendations || []).map(
+    (rec: { productName: string; reason: string; expectedImpact: string; priority: string }) => {
+      const product =
+        ALL_PRODUCTS.find(p => p.name.toLowerCase() === rec.productName.toLowerCase()) ||
+        ALL_PRODUCTS.find(p =>
+          p.name.toLowerCase().includes(rec.productName.toLowerCase().split(" ")[0])
+        ) ||
+        ALL_PRODUCTS[0];
 
-    return {
-      product,
-      reason: rec.reason,
-      expectedImpact: rec.expectedImpact,
-      priority: rec.priority as "high" | "medium" | "low",
-    };
-  });
+      return {
+        product,
+        reason: rec.reason,
+        expectedImpact: rec.expectedImpact,
+        priority: rec.priority as "high" | "medium" | "low",
+      };
+    }
+  );
 
   return {
     summary: parsed.summary,
@@ -128,4 +136,66 @@ Respond ONLY in this exact JSON format (no markdown, no extra text):
     dollarsPerWeekSaved: parsed.dollarsPerWeekSaved || "",
     nextStep: parsed.nextStep,
   };
+}
+
+async function geminiCall(input: AdvisorInput): Promise<AdvisorOutput> {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    tools: [{ googleSearchRetrieval: {} }],
+  });
+  const result = await model.generateContent(buildPrompt(input, true));
+  return parseOutput(result.response.text().trim());
+}
+
+async function groqFallback(input: AdvisorInput): Promise<AdvisorOutput> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY not configured");
+
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert Australian small business automation consultant. Always respond with valid JSON only.",
+        },
+        {
+          role: "user",
+          content: buildPrompt(input, false),
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_tokens: 2048,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Groq error ${response.status}: ${body}`);
+  }
+
+  const data = await response.json();
+  return parseOutput(data.choices[0].message.content);
+}
+
+export async function getAutomationAdvice(input: AdvisorInput): Promise<AdvisorOutput> {
+  try {
+    return await geminiCall(input);
+  } catch (err) {
+    const msg = String(err).toLowerCase();
+    if (
+      (msg.includes("prepayment") || msg.includes("depleted") || msg.includes("billing")) &&
+      process.env.GROQ_API_KEY
+    ) {
+      return await groqFallback(input);
+    }
+    throw err;
+  }
 }
