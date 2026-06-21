@@ -29,6 +29,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AdvisorOutput | null>(null);
   const [error, setError] = useState("");
+  const [apiUnavailable, setApiUnavailable] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistSent, setWaitlistSent] = useState(false);
   const [blueprintCount, setBlueprintCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -43,6 +46,7 @@ export default function Home() {
     setLoading(true);
     setError("");
     setResult(null);
+    setApiUnavailable(false);
 
     try {
       const res = await fetch("/api/advisor", {
@@ -53,17 +57,32 @@ export default function Home() {
           hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : undefined,
         }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
+        if (data.code === "api_unavailable") {
+          setApiUnavailable(true);
+          return;
+        }
         throw new Error(data.error || "Request failed");
       }
-      const data: AdvisorOutput = await res.json();
-      setResult(data);
+      setResult(data as AdvisorOutput);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function submitWaitlist(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      await fetch("/api/email-capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: waitlistEmail, businessType: form.businessType, summary: "Waitlist signup - AI temporarily unavailable" }),
+      });
+    } catch {}
+    setWaitlistSent(true);
   }
 
   return (
@@ -213,6 +232,32 @@ export default function Home() {
                   </div>
                 </div>
 
+                {apiUnavailable && (
+                  <div className="p-5 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="font-semibold text-amber-900 mb-1">AI advisor is temporarily down for maintenance</div>
+                    <p className="text-amber-800 text-sm mb-4">We are setting up billing for the AI. Usually back within a few hours. Leave your email and we will notify you when it is live.</p>
+                    {!waitlistSent ? (
+                      <form onSubmit={submitWaitlist} className="flex gap-3">
+                        <input
+                          type="email"
+                          required
+                          value={waitlistEmail}
+                          onChange={e => setWaitlistEmail(e.target.value)}
+                          placeholder="your@email.com.au"
+                          className="flex-1 px-4 py-2.5 border border-amber-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm bg-white"
+                        />
+                        <button
+                          type="submit"
+                          className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
+                        >
+                          Notify me
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="text-green-700 font-semibold text-sm">You are on the list. We will email you when the AI is back.</div>
+                    )}
+                  </div>
+                )}
                 {error && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                     {error}

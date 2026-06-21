@@ -30,6 +30,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(advice);
   } catch (err) {
     console.error("Advisor error:", err);
+    const msg = String(err).toLowerCase();
+    if (msg.includes("prepayment") || msg.includes("depleted") || msg.includes("billing")) {
+      return NextResponse.json(
+        { error: "AI advisor temporarily unavailable.", code: "api_unavailable" },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: "Failed to generate recommendations. Please try again." },
       { status: 500 }
